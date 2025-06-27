@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Your Account - Clean Reader</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f8f9fa; text-align: center; }
+    .container { background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: 20px; }
+    h1 { color: #333; }
+    p { color: #666; font-size: 1.1em; }
+    .success { color: #28a745; }
+    .error { color: #dc3545; }
+  </style>
+  <!-- No Supabase JS library needed for this simpler method -->
+</head>
+<body>
+  <div class="container">
+    <h1 id="message-title">Confirming your account...</h1>
+    <p id="message-body">Please wait a moment.</p>
+  </div>
+
+  <script>
+    const titleEl = document.getElementById('message-title');
+    const bodyEl = document.getElementById('message-body');
+
+    // This function runs as soon as the page has loaded
+    window.onload = function() {
+      // Supabase confirmation links redirect back to the site URL
+      // and add the session information in the URL hash.
+      // A successful confirmation will result in a URL like:
+      // https://yoursite.com/#access_token=...&token_type=bearer&...
+
+      if (window.location.hash.includes('access_token')) {
+        // SUCCESS: The user has been confirmed.
+        titleEl.textContent = '✅ Success!';
+        titleEl.classList.add('success');
+        bodyEl.textContent = 'Your account has been confirmed. You can now close this page and log in to the Clean Reader extension.';
+      } else {
+        // ERROR or Initial State: No token found.
+        // This might happen if someone visits the page directly.
+        titleEl.textContent = 'Account Confirmation';
+        titleEl.classList.remove('success', 'error');
+        bodyEl.textContent = 'This page is for email confirmation. Please click the link in the email sent to you to confirm your account.';
+      }
+    };
+  </script>
+</body>
+</html>
