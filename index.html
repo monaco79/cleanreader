@@ -153,49 +153,40 @@
         // --- 2. INITIALIZE SUPABASE CLIENT ---
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- 3. PAGE LOGIC ---
+        // --- 3. PAGE LOGIC (REBUILT) ---
         document.addEventListener('DOMContentLoaded', () => {
             const loadingPanel = document.getElementById('loadingPanel');
             const confirmedPanel = document.getElementById('confirmedPanel');
             const resetPanel = document.getElementById('resetPanel');
             const errorPanel = document.getElementById('errorPanel');
-            const errorMessage = document.getElementById('errorMessage');
             const updatePasswordBtn = document.getElementById('updatePasswordBtn');
             const statusDiv = document.getElementById('status');
-            
-            let accessToken = null;
 
-            // --- Handle the redirect from Supabase ---
-            const hash = window.location.hash.substring(1);
-            if (hash) {
-                const params = new URLSearchParams(hash);
-                const type = params.get('type');
-                accessToken = params.get('access_token');
-                
+            let supabaseEventDetected = false;
+
+            // --- THIS IS THE CORRECT, EVENT-DRIVEN APPROACH ---
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                supabaseEventDetected = true;
                 loadingPanel.classList.add('hidden');
 
-                if (type === 'signup') {
-                    // Email confirmation successful
-                    confirmedPanel.classList.remove('hidden');
-                } else if (type === 'recovery' && accessToken) {
-                    // Password reset link clicked
+                if (event === "PASSWORD_RECOVERY") {
+                    // This event fires when the user clicks the password reset link.
+                    // Supabase has already verified the token and created a temporary session.
                     resetPanel.classList.remove('hidden');
+                } else if (event === "SIGNED_IN") {
+                    // This event fires after a user confirms their email address.
+                    confirmedPanel.classList.remove('hidden');
                 } else {
-                    // Invalid link
+                    // Handle other cases or show a generic error.
                     errorPanel.classList.remove('hidden');
                 }
-            } else {
-                loadingPanel.classList.add('hidden');
-                errorMessage.textContent = 'No authentication token found. This page should be accessed from an email link.';
-                errorPanel.classList.remove('hidden');
-            }
+            });
 
             // --- Event listener for the password update button ---
             updatePasswordBtn.addEventListener('click', async () => {
                 const newPassword = document.getElementById('newPassword').value;
                 const confirmNewPassword = document.getElementById('confirmNewPassword').value;
                 
-                // Client-side validation
                 if (!newPassword || newPassword.length < 6) {
                     statusDiv.className = 'status error';
                     statusDiv.textContent = 'Password must be at least 6 characters.';
@@ -211,40 +202,34 @@
                 updatePasswordBtn.disabled = true;
                 updatePasswordBtn.textContent = 'Updating...';
 
-                // Use the accessToken from the URL to authenticate this request
-                // We must use it to set the session before updating the user
-                const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: '' }); // We don't get a refresh token here
-
-                if (sessionError) {
-                    statusDiv.className = 'status error';
-                    statusDiv.textContent = `Authentication error: ${sessionError.message}`;
-                    updatePasswordBtn.disabled = false;
-                    updatePasswordBtn.textContent = 'Update Password';
-                    return;
-                }
-
-                // Now that the session is set, we can update the password
-                const { error: updateError } = await supabase.auth.updateUser({
+                // Because the onAuthStateChange event has already fired,
+                // Supabase knows who the user is. We can just call updateUser.
+                const { error } = await supabase.auth.updateUser({
                     password: newPassword
                 });
 
-                if (updateError) {
+                if (error) {
                     statusDiv.className = 'status error';
-                    statusDiv.textContent = `Error: ${updateError.message}`;
+                    statusDiv.textContent = `Error: ${error.message}`;
+                    updatePasswordBtn.disabled = false;
+                    updatePasswordBtn.textContent = 'Update Password';
                 } else {
                     statusDiv.className = 'status success';
                     statusDiv.textContent = 'Password updated successfully! You can close this page.';
-                    // Visually disable the form after success
                     document.getElementById('newPassword').disabled = true;
                     document.getElementById('confirmNewPassword').disabled = true;
-                }
-                
-                // We only re-enable the button on failure
-                if(updateError) {
-                    updatePasswordBtn.disabled = false;
-                    updatePasswordBtn.textContent = 'Update Password';
+                    updatePasswordBtn.disabled = true;
                 }
             });
+
+            // --- Fallback for invalid links ---
+            // If Supabase doesn't fire an event after a short delay, the link is likely bad.
+            setTimeout(() => {
+                if (!supabaseEventDetected) {
+                    loadingPanel.classList.add('hidden');
+                    errorPanel.classList.remove('hidden');
+                }
+            }, 2500);
         });
     </script>
 </body>
