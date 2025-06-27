@@ -148,7 +148,7 @@
 
         // --- 1. CONFIGURE YOUR PROJECT HERE ---
         const SUPABASE_URL = 'https://atzkkwqtudcrpsvgcnrm.supabase.co';
-        const SUPABASE_ANON_KEY = 'PeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0emtrd3F0dWRjcnBzdmdjbnJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MDk1OTYsImV4cCI6MjA2NTk4NTU5Nn0.wUljuevaTWmeqUUd_yv6jJNjoMYwthlDBQMI1pJXcBc';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0emtrd3F0dWRjcnBzdmdjbnJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MDk1OTYsImV4cCI6MjA2NTk4NTU5Nn0.wUljuevaTWmeqUUd_yv6jJNjoMYwthlDBQMI1pJXcBc';
 
         // --- 2. INITIALIZE SUPABASE CLIENT ---
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -157,29 +157,24 @@
         document.addEventListener('DOMContentLoaded', () => {
             const loadingPanel = document.getElementById('loadingPanel');
             const confirmedPanel = document.getElementById('confirmedPanel');
-            const resetPanel = aodcument.getElementById('resetPanel');
+            // *** THIS IS THE FIX: "aodcument" changed to "document" ***
+            const resetPanel = document.getElementById('resetPanel');
             const errorPanel = document.getElementById('errorPanel');
             const updatePasswordBtn = document.getElementById('updatePasswordBtn');
             const statusDiv = document.getElementById('status');
             
-            // --- This is the correct, event-driven approach ---
             supabase.auth.onAuthStateChange(async (event, session) => {
-                loadingPanel.classList.add('hidden'); // Hide loading panel on any event
+                loadingPanel.classList.add('hidden');
 
                 if (event === "PASSWORD_RECOVERY") {
                     resetPanel.classList.remove('hidden');
                 } else if (event === "SIGNED_IN") {
-                    // This event fires after a user confirms their email.
-                    // This also handles password recovery success because updating the user
-                    // often results in a new SIGNED_IN event.
-                    // To avoid showing the wrong screen, we only show this if the reset panel is hidden.
                     if (resetPanel.classList.contains('hidden')) {
                          confirmedPanel.classList.remove('hidden');
                     }
                 }
             });
 
-            // --- Event listener for the password update button ---
             updatePasswordBtn.addEventListener('click', async () => {
                 const newPassword = document.getElementById('newPassword').value;
                 const confirmNewPassword = document.getElementById('confirmNewPassword').value;
@@ -217,8 +212,6 @@
                 }
             });
             
-            // --- Handle invalid link case ---
-            // If the URL has no fragment, the link is definitely invalid.
             if (!window.location.hash) {
                  loadingPanel.classList.add('hidden');
                  errorPanel.classList.remove('hidden');
