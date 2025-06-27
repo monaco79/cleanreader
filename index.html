@@ -1,49 +1,251 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirm Your Account - Clean Reader</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f8f9fa; text-align: center; }
-    .container { background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 500px; margin: 20px; }
-    h1 { color: #333; }
-    p { color: #666; font-size: 1.1em; }
-    .success { color: #28a745; }
-    .error { color: #dc3545; }
-  </style>
-  <!-- No Supabase JS library needed for this simpler method -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean Reader Account</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --secondary-text: #6c757d;
+            --border-color: #e0e0e0;
+            --primary-color: #4285f4;
+            --primary-hover: #3367d6;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            color: var(--text-color);
+        }
+        .container {
+            background-color: var(--bg-color);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
+        h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        p {
+            color: var(--secondary-text);
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            font-weight: 500;
+            min-height: 20px;
+        }
+        .status.success { color: var(--success-color); }
+        .status.error { color: var(--error-color); }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #dee2e6;
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1 id="message-title">Confirming your account...</h1>
-    <p id="message-body">Please wait a moment.</p>
-  </div>
 
-  <script>
-    const titleEl = document.getElementById('message-title');
-    const bodyEl = document.getElementById('message-body');
+    <div class="container" id="authContainer">
+        <!-- Loading Panel (Default) -->
+        <div id="loadingPanel">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
 
-    // This function runs as soon as the page has loaded
-    window.onload = function() {
-      // Supabase confirmation links redirect back to the site URL
-      // and add the session information in the URL hash.
-      // A successful confirmation will result in a URL like:
-      // https://yoursite.com/#access_token=...&token_type=bearer&...
+        <!-- Email Confirmed Panel -->
+        <div id="confirmedPanel" class="hidden">
+            <h2>✅ Email Confirmed!</h2>
+            <p>Your account is now active. You can close this page and log in to the Clean Reader extension.</p>
+        </div>
 
-      if (window.location.hash.includes('access_token')) {
-        // SUCCESS: The user has been confirmed.
-        titleEl.textContent = '✅ Success!';
-        titleEl.classList.add('success');
-        bodyEl.textContent = 'Your account has been confirmed. You can now close this page and log in to the Clean Reader extension.';
-      } else {
-        // ERROR or Initial State: No token found.
-        // This might happen if someone visits the page directly.
-        titleEl.textContent = 'Account Confirmation';
-        titleEl.classList.remove('success', 'error');
-        bodyEl.textContent = 'This page is for email confirmation. Please click the link in the email sent to you to confirm your account.';
-      }
-    };
-  </script>
+        <!-- Password Reset Panel -->
+        <div id="resetPanel" class="hidden">
+            <h2>Reset Your Password</h2>
+            <p>Please enter and confirm your new password below.</p>
+            <div class="input-group">
+                <label for="newPassword">New Password</label>
+                <input type="password" id="newPassword" placeholder="Enter new password">
+            </div>
+            <div class="input-group">
+                <label for="confirmNewPassword">Confirm New Password</label>
+                <input type="password" id="confirmNewPassword" placeholder="Confirm new password">
+            </div>
+            <button id="updatePasswordBtn" class="btn">Update Password</button>
+            <div id="status" class="status"></div>
+        </div>
+
+        <!-- Error Panel -->
+        <div id="errorPanel" class="hidden">
+            <h2>❌ An Error Occurred</h2>
+            <p id="errorMessage">The link is invalid or has expired. Please try again.</p>
+        </div>
+    </div>
+
+    <!-- Import Supabase client library -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+        // --- 1. CONFIGURE YOUR PROJECT HERE ---
+        const SUPABASE_URL = 'PASTE_YOUR_SUPABASE_URL_HERE';
+        const SUPABASE_ANON_KEY = 'PASTE_YOUR_SUPABASE_ANON_KEY_HERE';
+
+        // --- 2. INITIALIZE SUPABASE CLIENT ---
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- 3. PAGE LOGIC ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingPanel = document.getElementById('loadingPanel');
+            const confirmedPanel = document.getElementById('confirmedPanel');
+            const resetPanel = document.getElementById('resetPanel');
+            const errorPanel = document.getElementById('errorPanel');
+            const errorMessage = document.getElementById('errorMessage');
+            const updatePasswordBtn = document.getElementById('updatePasswordBtn');
+            const statusDiv = document.getElementById('status');
+            
+            let accessToken = null;
+
+            // --- Handle the redirect from Supabase ---
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                const params = new URLSearchParams(hash);
+                const type = params.get('type');
+                accessToken = params.get('access_token');
+                
+                loadingPanel.classList.add('hidden');
+
+                if (type === 'signup') {
+                    // Email confirmation successful
+                    confirmedPanel.classList.remove('hidden');
+                } else if (type === 'recovery' && accessToken) {
+                    // Password reset link clicked
+                    resetPanel.classList.remove('hidden');
+                } else {
+                    // Invalid link
+                    errorPanel.classList.remove('hidden');
+                }
+            } else {
+                loadingPanel.classList.add('hidden');
+                errorMessage.textContent = 'No authentication token found. This page should be accessed from an email link.';
+                errorPanel.classList.remove('hidden');
+            }
+
+            // --- Event listener for the password update button ---
+            updatePasswordBtn.addEventListener('click', async () => {
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+                
+                // Client-side validation
+                if (!newPassword || newPassword.length < 6) {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = 'Password must be at least 6 characters.';
+                    return;
+                }
+                if (newPassword !== confirmNewPassword) {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = 'Passwords do not match.';
+                    return;
+                }
+
+                statusDiv.textContent = '';
+                updatePasswordBtn.disabled = true;
+                updatePasswordBtn.textContent = 'Updating...';
+
+                // Use the accessToken from the URL to authenticate this request
+                // We must use it to set the session before updating the user
+                const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: '' }); // We don't get a refresh token here
+
+                if (sessionError) {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = `Authentication error: ${sessionError.message}`;
+                    updatePasswordBtn.disabled = false;
+                    updatePasswordBtn.textContent = 'Update Password';
+                    return;
+                }
+
+                // Now that the session is set, we can update the password
+                const { error: updateError } = await supabase.auth.updateUser({
+                    password: newPassword
+                });
+
+                if (updateError) {
+                    statusDiv.className = 'status error';
+                    statusDiv.textContent = `Error: ${updateError.message}`;
+                } else {
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = 'Password updated successfully! You can close this page.';
+                    // Visually disable the form after success
+                    document.getElementById('newPassword').disabled = true;
+                    document.getElementById('confirmNewPassword').disabled = true;
+                }
+                
+                // We only re-enable the button on failure
+                if(updateError) {
+                    updatePasswordBtn.disabled = false;
+                    updatePasswordBtn.textContent = 'Update Password';
+                }
+            });
+        });
+    </script>
 </body>
 </html>
