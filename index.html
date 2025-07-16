@@ -147,8 +147,9 @@
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
         // --- 1. CONFIGURE YOUR PROJECT HERE ---
-        const SUPABASE_URL = 'https://atzkkwqtudcrpsvgcnrm.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0emtrd3F0dWRjcnBzdmdjbnJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0MDk1OTYsImV4cCI6MjA2NTk4NTU5Nn0.wUljuevaTWmeqUUd_yv6jJNjoMYwthlDBQMI1pJXcBc';
+        // IMPORTANT: Replace with your actual Supabase URL and Anon Key
+        const SUPABASE_URL = 'https://mwrzcjvubinkbrtbddgd.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13cnpjanZ1Ymlua2JydGJkZGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzMTQzNDUsImV4cCI6MjA2Nzg5MDM0NX0.bh297ELypc13qWYmVAJ2SHDAew9VXppNMWLppxh5jAw';
 
         // --- 2. INITIALIZE SUPABASE CLIENT ---
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -157,7 +158,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const loadingPanel = document.getElementById('loadingPanel');
             const confirmedPanel = document.getElementById('confirmedPanel');
-            // *** THIS IS THE FIX: "aodcument" changed to "document" ***
+            // *** THIS IS THE FIX: "aodcument" was changed to "document" ***
             const resetPanel = document.getElementById('resetPanel');
             const errorPanel = document.getElementById('errorPanel');
             const updatePasswordBtn = document.getElementById('updatePasswordBtn');
@@ -169,6 +170,7 @@
                 if (event === "PASSWORD_RECOVERY") {
                     resetPanel.classList.remove('hidden');
                 } else if (event === "SIGNED_IN") {
+                    // This handles both email confirmation and password updates successfully.
                     if (resetPanel.classList.contains('hidden')) {
                          confirmedPanel.classList.remove('hidden');
                     }
