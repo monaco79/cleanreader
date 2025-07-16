@@ -3,22 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clean Reader Account</title>
+    <title>ynklist Account</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alice&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #ffffff;
+            /* Colors from ynklist popup.css & reader.css */
+            --bg-color: #f8f9fa;
+            --surface-color: #ffffff;
             --text-color: #333333;
             --secondary-text: #6c757d;
             --border-color: #e0e0e0;
-            --primary-color: #4285f4;
-            --primary-hover: #3367d6;
+            --primary-color: #5271ff;
+            --primary-hover: #004aad;
             --success-color: #28a745;
             --error-color: #dc3545;
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --font-logo: 'Alice', serif;
+            --font-main: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f8f9fa;
+            font-family: var(--font-main);
+            background-color: var(--bg-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -27,13 +34,23 @@
             color: var(--text-color);
         }
         .container {
-            background-color: var(--bg-color);
+            background-color: var(--surface-color);
             padding: 40px;
-            border-radius: 12px;
+            border-radius: 20px; /* Increased rounding */
             box-shadow: var(--shadow);
             width: 90%;
             max-width: 420px;
             text-align: center;
+        }
+        .header {
+            margin-bottom: 25px;
+        }
+        .header h1 {
+            font-family: var(--font-logo);
+            font-size: 52px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-color);
         }
         .hidden {
             display: none;
@@ -42,11 +59,13 @@
             margin-top: 0;
             margin-bottom: 10px;
             font-size: 24px;
+            font-weight: 600;
         }
         p {
             color: var(--secondary-text);
             margin-bottom: 25px;
-            line-height: 1.5;
+            line-height: 1.6;
+            font-size: 15px;
         }
         .input-group {
             margin-bottom: 15px;
@@ -60,21 +79,27 @@
         }
         input[type="password"] {
             width: 100%;
-            padding: 12px;
+            padding: 12px 18px; /* More padding */
             border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 20px; /* Increased rounding */
             font-size: 16px;
             box-sizing: border-box;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        input[type="password"]:focus {
+          outline: none;
+          border-color: var(--primary-color);
+          box-shadow: 0 0 0 3px rgba(82, 113, 255, 0.1);
         }
         .btn {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 20px; /* Increased rounding */
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s;
         }
@@ -84,6 +109,7 @@
         .btn:disabled {
             background-color: #ccc;
             cursor: not-allowed;
+            opacity: 0.7;
         }
         .status {
             margin-top: 20px;
@@ -107,6 +133,10 @@
 <body>
 
     <div class="container" id="authContainer">
+        <div class="header">
+            <h1>ynklist</h1>
+        </div>
+        
         <!-- Loading Panel (Default) -->
         <div id="loadingPanel">
             <div class="spinner"></div>
@@ -116,7 +146,7 @@
         <!-- Email Confirmed Panel -->
         <div id="confirmedPanel" class="hidden">
             <h2>✅ Email Confirmed!</h2>
-            <p>Your account is now active. You can close this page and log in to the Clean Reader extension.</p>
+            <p>Your account is now active. You can close this page and log in to the extension.</p>
         </div>
 
         <!-- Password Reset Panel -->
@@ -125,14 +155,20 @@
             <p>Please enter and confirm your new password below.</p>
             <div class="input-group">
                 <label for="newPassword">New Password</label>
-                <input type="password" id="newPassword" placeholder="Enter new password">
+                <input type="password" id="newPassword" placeholder="Enter new password" autocomplete="new-password">
             </div>
             <div class="input-group">
                 <label for="confirmNewPassword">Confirm New Password</label>
-                <input type="password" id="confirmNewPassword" placeholder="Confirm new password">
+                <input type="password" id="confirmNewPassword" placeholder="Confirm new password" autocomplete="new-password">
             </div>
             <button id="updatePasswordBtn" class="btn">Update Password</button>
             <div id="status" class="status"></div>
+        </div>
+        
+        <!-- Password Updated Panel -->
+        <div id="updatedPanel" class="hidden">
+            <h2>✅ Password Updated!</h2>
+            <p>Your password has been changed successfully. You can now close this page.</p>
         </div>
 
         <!-- Error Panel -->
@@ -147,19 +183,18 @@
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
         // --- 1. CONFIGURE YOUR PROJECT HERE ---
-        // IMPORTANT: Replace with your actual Supabase URL and Anon Key
         const SUPABASE_URL = 'https://mwrzcjvubinkbrtbddgd.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13cnpjanZ1Ymlua2JydGJkZGdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIzMTQzNDUsImV4cCI6MjA2Nzg5MDM0NX0.bh297ELypc13qWYmVAJ2SHDAew9VXppNMWLppxh5jAw';
 
         // --- 2. INITIALIZE SUPABASE CLIENT ---
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- 3. PAGE LOGIC (REBUILT) ---
+        // --- 3. PAGE LOGIC ---
         document.addEventListener('DOMContentLoaded', () => {
             const loadingPanel = document.getElementById('loadingPanel');
             const confirmedPanel = document.getElementById('confirmedPanel');
-            // *** THIS IS THE FIX: "aodcument" was changed to "document" ***
             const resetPanel = document.getElementById('resetPanel');
+            const updatedPanel = document.getElementById('updatedPanel');
             const errorPanel = document.getElementById('errorPanel');
             const updatePasswordBtn = document.getElementById('updatePasswordBtn');
             const statusDiv = document.getElementById('status');
@@ -170,10 +205,12 @@
                 if (event === "PASSWORD_RECOVERY") {
                     resetPanel.classList.remove('hidden');
                 } else if (event === "SIGNED_IN") {
-                    // This handles both email confirmation and password updates successfully.
-                    if (resetPanel.classList.contains('hidden')) {
-                         confirmedPanel.classList.remove('hidden');
-                    }
+                    // This now handles email confirmation after sign-up
+                    confirmedPanel.classList.remove('hidden');
+                } else if (event === "USER_UPDATED") {
+                    // This handles the state after a successful password update
+                    resetPanel.classList.add('hidden');
+                    updatedPanel.classList.remove('hidden');
                 }
             });
 
@@ -205,15 +242,12 @@
                     statusDiv.textContent = `Error: ${error.message}`;
                     updatePasswordBtn.disabled = false;
                     updatePasswordBtn.textContent = 'Update Password';
-                } else {
-                    statusDiv.className = 'status success';
-                    statusDiv.textContent = 'Password updated successfully! You can close this page.';
-                    document.getElementById('newPassword').disabled = true;
-                    document.getElementById('confirmNewPassword').disabled = true;
-                    updatePasswordBtn.disabled = true;
                 }
+                // No need for an 'else' here, the USER_UPDATED event will trigger the UI change.
             });
             
+            // Show an error if the user lands on the page without a hash fragment,
+            // as this indicates the link is broken or incomplete.
             if (!window.location.hash) {
                  loadingPanel.classList.add('hidden');
                  errorPanel.classList.remove('hidden');
