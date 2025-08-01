@@ -19,6 +19,7 @@
             --primary-hover: #004aad;
             --success-color: #28a745;
             --error-color: #dc3545;
+            --warning-color: #ff9500;
             --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             --font-logo: 'Alice', serif;
             --font-main: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -29,14 +30,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             color: var(--text-color);
+            padding: 20px;
+            box-sizing: border-box;
         }
         .container {
             background-color: var(--surface-color);
             padding: 40px;
-            border-radius: 20px; /* Increased rounding */
+            border-radius: 20px;
             box-shadow: var(--shadow);
             width: 90%;
             max-width: 420px;
@@ -79,9 +82,9 @@
         }
         input[type="password"] {
             width: 100%;
-            padding: 12px 18px; /* More padding */
+            padding: 12px 18px;
             border: 1px solid var(--border-color);
-            border-radius: 20px; /* Increased rounding */
+            border-radius: 20px;
             font-size: 16px;
             box-sizing: border-box;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -97,7 +100,7 @@
             background: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 20px; /* Increased rounding */
+            border-radius: 20px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
@@ -111,6 +114,12 @@
             cursor: not-allowed;
             opacity: 0.7;
         }
+        .btn-danger {
+            background: var(--error-color);
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
         .status {
             margin-top: 20px;
             font-weight: 500;
@@ -118,6 +127,7 @@
         }
         .status.success { color: var(--success-color); }
         .status.error { color: var(--error-color); }
+        .status.warning { color: var(--warning-color); }
         .spinner {
             width: 40px;
             height: 40px;
@@ -128,6 +138,44 @@
             margin: 20px auto;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Account deletion specific styles */
+        .warning-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .warning-box p {
+            color: #856404;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+        .warning-box strong {
+            color: #b8860b;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            text-align: left;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+            margin-top: 2px;
+            transform: scale(1.2);
+        }
+        .checkbox-group label {
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.4;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -171,6 +219,39 @@
             <p>Your password has been changed successfully. You can now close this page.</p>
         </div>
 
+        <!-- Account Deletion Confirmation Panel -->
+        <div id="deletionPanel" class="hidden">
+            <h2>⚠️ Delete Your Account</h2>
+            <p>You are about to permanently delete your ynklist account.</p>
+            
+            <div class="warning-box">
+                <p><strong>What will happen:</strong></p>
+                <p>• Your account and all cloud data will be permanently deleted</p>
+                <p>• You will no longer be able to sync articles across devices</p>
+                <p>• This action cannot be undone</p>
+                <p><strong>What will NOT be affected:</strong></p>
+                <p>• Articles saved locally on this device will remain</p>
+                <p>• You can continue using ynklist locally on each device</p>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="deletionConfirmCheckbox">
+                <label for="deletionConfirmCheckbox">
+                    Yes, I understand the consequences and want to permanently delete my account.
+                </label>
+            </div>
+            
+            <button id="confirmDeletionBtn" class="btn btn-danger" disabled>Delete My Account</button>
+            <div id="deletionStatus" class="status"></div>
+        </div>
+
+        <!-- Account Deleted Panel -->
+        <div id="deletedPanel" class="hidden">
+            <h2>✅ Account Deleted</h2>
+            <p>Your ynklist account has been permanently deleted. Your local articles on this device remain unchanged.</p>
+            <p>You can close this page now.</p>
+        </div>
+
         <!-- Error Panel -->
         <div id="errorPanel" class="hidden">
             <h2>❌ An Error Occurred</h2>
@@ -195,9 +276,23 @@
             const confirmedPanel = document.getElementById('confirmedPanel');
             const resetPanel = document.getElementById('resetPanel');
             const updatedPanel = document.getElementById('updatedPanel');
+            const deletionPanel = document.getElementById('deletionPanel');
+            const deletedPanel = document.getElementById('deletedPanel');
             const errorPanel = document.getElementById('errorPanel');
             const updatePasswordBtn = document.getElementById('updatePasswordBtn');
+            const confirmDeletionBtn = document.getElementById('confirmDeletionBtn');
+            const deletionConfirmCheckbox = document.getElementById('deletionConfirmCheckbox');
             const statusDiv = document.getElementById('status');
+            const deletionStatusDiv = document.getElementById('deletionStatus');
+            
+            // Check URL hash for deletion confirmation
+            const urlHash = window.location.hash;
+            const isAccountDeletion = urlHash.includes('type=account_deletion');
+            
+            // Enable/disable deletion button based on checkbox
+            deletionConfirmCheckbox.addEventListener('change', () => {
+                confirmDeletionBtn.disabled = !deletionConfirmCheckbox.checked;
+            });
             
             supabase.auth.onAuthStateChange(async (event, session) => {
                 loadingPanel.classList.add('hidden');
@@ -205,15 +300,27 @@
                 if (event === "PASSWORD_RECOVERY") {
                     resetPanel.classList.remove('hidden');
                 } else if (event === "SIGNED_IN") {
-                    // This now handles email confirmation after sign-up
-                    confirmedPanel.classList.remove('hidden');
+                    // Check if this is an account deletion confirmation
+                    if (isAccountDeletion) {
+                        deletionPanel.classList.remove('hidden');
+                    } else {
+                        // Regular email confirmation after sign-up
+                        confirmedPanel.classList.remove('hidden');
+                    }
                 } else if (event === "USER_UPDATED") {
                     // This handles the state after a successful password update
                     resetPanel.classList.add('hidden');
                     updatedPanel.classList.remove('hidden');
+                } else if (event === "SIGNED_OUT") {
+                    // User was deleted successfully
+                    if (deletionPanel.classList.contains('hidden') === false) {
+                        deletionPanel.classList.add('hidden');
+                        deletedPanel.classList.remove('hidden');
+                    }
                 }
             });
 
+            // Password update logic
             updatePasswordBtn.addEventListener('click', async () => {
                 const newPassword = document.getElementById('newPassword').value;
                 const confirmNewPassword = document.getElementById('confirmNewPassword').value;
@@ -243,7 +350,53 @@
                     updatePasswordBtn.disabled = false;
                     updatePasswordBtn.textContent = 'Update Password';
                 }
-                // No need for an 'else' here, the USER_UPDATED event will trigger the UI change.
+            });
+
+            // Account deletion logic
+            confirmDeletionBtn.addEventListener('click', async () => {
+                if (!deletionConfirmCheckbox.checked) {
+                    return;
+                }
+
+                deletionStatusDiv.textContent = '';
+                confirmDeletionBtn.disabled = true;
+                confirmDeletionBtn.textContent = 'Deleting Account...';
+                
+                try {
+                    // Get current user
+                    const { data: { user } } = await supabase.auth.getUser();
+                    
+                    if (!user) {
+                        throw new Error('No user found');
+                    }
+
+                    // First, delete all user's articles
+                    const { error: articlesError } = await supabase
+                        .from('articles')
+                        .delete()
+                        .eq('user_id', user.id);
+
+                    if (articlesError) {
+                        console.warn('Error deleting articles:', articlesError);
+                        // Continue with account deletion even if articles deletion fails
+                    }
+
+                    // Delete the user account
+                    const { error: deleteError } = await supabase.rpc('delete_user');
+
+                    if (deleteError) {
+                        throw deleteError;
+                    }
+
+                    // Success - the SIGNED_OUT event will handle UI update
+                    
+                } catch (error) {
+                    console.error('Account deletion error:', error);
+                    deletionStatusDiv.className = 'status error';
+                    deletionStatusDiv.textContent = `Error: ${error.message}`;
+                    confirmDeletionBtn.disabled = false;
+                    confirmDeletionBtn.textContent = 'Delete My Account';
+                }
             });
             
             // Show an error if the user lands on the page without a hash fragment,
